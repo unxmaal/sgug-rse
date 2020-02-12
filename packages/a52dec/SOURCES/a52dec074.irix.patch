@@ -1,0 +1,12 @@
+diff -Naur a52dec-0.7.4.orig/configure.in a52dec-0.7.4/configure.in
+--- a52dec-0.7.4.orig/configure.in	2002-07-27 23:50:20.000000000 +0000
++++ a52dec-0.7.4/configure.in	2020-02-12 09:11:35.162365689 +0000
+@@ -45,7 +45,7 @@
+ 	OPT_CFLAGS="$CFLAGS -mtune=ultrasparc"
+ 	AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS]);;
+     mips-sgi-irix6.*)	dnl do we need to be that specific ?
+-	OPT_CFLAGS="$CFLAGS -mabi=64"
++	OPT_CFLAGS="$CFLAGS -mcpu=mips"
+ 	AC_TRY_CFLAGS([$OPT_CFLAGS],[CFLAGS=$OPT_CFLAGS]);;
+     esac
+ elif test x"$CC" = x"tcc" -a x"`$CC -version 2>&1 | grep TenDRA`" != x""; then
