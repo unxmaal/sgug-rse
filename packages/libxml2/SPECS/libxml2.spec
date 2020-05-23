@@ -1,9 +1,6 @@
-# This package is able to use optimised linker flags.
-%global build_ldflags %{sgug_optimised_ldflags}
-
 Name:           libxml2
-Version:        2.9.9
-Release:        4%{?dist}
+Version:        2.9.10
+Release:        3%{?dist}
 Summary:        Library providing XML and HTML support
 
 License:        MIT
@@ -13,12 +10,17 @@ Patch0:         libxml2-multilib.patch
 # Patch from openSUSE.
 # See:  https://bugzilla.gnome.org/show_bug.cgi?id=789714
 Patch1:         libxml2-2.9.8-python3-unicode-errors.patch
+Patch2:         https://gitlab.gnome.org/GNOME/libxml2/commit/0815302dee2b78139832c2080348086a0564836b.patch#/fix-relaxed-approach-to-nested-documents.patch
+# https://gitlab.gnome.org/GNOME/libxml2/merge_requests/68
+Patch3:         libxml2-2.9.10-CVE-2019-20388.patch
+# https://gitlab.gnome.org/GNOME/libxml2/merge_requests/63
+Patch4:         libxml2-2.9.10-CVE-2020-7595.patch
 
 BuildRequires:  gcc
 BuildRequires:  make
-#BuildRequires:  cmake-rpm-macros
-BuildRequires:  zlib-devel
-BuildRequires:  xz-devel
+BuildRequires:  cmake-rpm-macros
+BuildRequires:  pkgconfig(zlib)
+BuildRequires:  pkgconfig(liblzma)
 
 %description
 This library allows to manipulate XML files. It includes support
@@ -63,66 +65,61 @@ microseconds when parsing, do not link to them for generic purpose packages.
 #Requires:       %{name}%{?_isa} = %{version}-%{release}
 #Obsoletes:      %{name}-python < %{version}-%{release}
 #Provides:       %{name}-python = %{version}-%{release}
-
+#
 #%description -n python2-%{name}
 #The libxml2-python package contains a Python 2 module that permits applications
 #written in the Python programming language, version 2, to use the interface
 #supplied by the libxml2 library to manipulate XML files.
-
+#
 #This library allows to manipulate XML files. It includes support
 #to read, modify and write XML and HTML files. There is DTDs support
 #this includes parsing and validation even with complex DTDs, either
 #at parse time or later once the document has been modified.
+#
+%package -n python3-%{name}
+Summary:        Python 3 bindings for the libxml2 library
+BuildRequires:  python3-devel
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+Obsoletes:      %{name}-python3 < %{version}-%{release}
+Provides:       %{name}-python3 = %{version}-%{release}
 
-#%package -n python3-%{name}
-#Summary:        Python 3 bindings for the libxml2 library
-#BuildRequires:  python3-devel
-#Requires:       %{name}%{?_isa} = %{version}-%{release}
-#Obsoletes:      %{name}-python3 < %{version}-%{release}
-#Provides:       %{name}-python3 = %{version}-%{release}
+%description -n python3-%{name}
+The libxml2-python3 package contains a Python 3 module that permits
+applications written in the Python programming language, version 3, to use the
+interface supplied by the libxml2 library to manipulate XML files.
 
-#%description -n python3-%{name}
-#The libxml2-python3 package contains a Python 3 module that permits
-#applications written in the Python programming language, version 3, to use the
-#interface supplied by the libxml2 library to manipulate XML files.
-
-#This library allows to manipulate XML files. It includes support
-#to read, modify and write XML and HTML files. There is DTDs support
-#this includes parsing and validation even with complex DTDs, either
-#at parse time or later once the document has been modified.
+This library allows to manipulate XML files. It includes support
+to read, modify and write XML and HTML files. There is DTDs support
+this includes parsing and validation even with complex DTDs, either
+at parse time or later once the document has been modified.
 
 %prep
-
 %autosetup -p1
 find doc -type f -executable -print -exec chmod 0644 {} ';'
 
 %build
-# Rewrite the default catalogs to our intended paths
-perl -pi -e "s|/etc/sgml/catalog|%{_prefix}/etc/sgml/catalog|g" catalog.c
-perl -pi -e "s|/etc/sgml/catalog|%{_prefix}/etc/sgml/catalog|g" xmlcatalog.c
-
-perl -pi -e "s|/etc/xml/catalog|%{_prefix}/etc/xml/catalog|g" catalog.c
-perl -pi -e "s|/etc/xml/catalog|%{_prefix}/etc/xml/catalog|g" xmlcatalog.c
-
+mkdir py3
+%global _configure ../configure
 %global _configure_disable_silent_rules 1
-%configure --without-python
-make %{?_smp_mflags}
+( cd py3 && %configure --cache-file=../config.cache --with-python=%{__python3} )
+%make_build -C py3
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
+%make_install -C py3
 
 # multiarch crazyness on timestamp differences or Makefile/binaries for examples
 touch -m --reference=%{buildroot}%{_includedir}/libxml2/libxml/parser.h %{buildroot}%{_bindir}/xml2-config
 
 find %{buildroot} -type f -name '*.la' -print -delete
-rm -vf %{buildroot}{%{python2_sitearch},%{python3_sitearch}}/*.a
+#rm -vf %{buildroot}{%{python2_sitearch},%{python3_sitearch}}/*.a
+rm -vf %{buildroot}%{python3_sitearch}}/*.a
 rm -vrf %{buildroot}%{_datadir}/doc/
 #(cd doc/examples ; make clean ; rm -rf .deps Makefile)
 gzip -9 -c doc/libxml2-api.xml > doc/libxml2-api.xml.gz
 
-%check
-%make_build runtests -C py2
-%make_build runtests -C py3
+#%check
+#%make_build runtests -C py2
+#%make_build runtests -C py3
 
 #%ldconfig_scriptlets
 
@@ -162,19 +159,26 @@ gzip -9 -c doc/libxml2-api.xml > doc/libxml2-api.xml.gz
 #%{python2_sitearch}/libxml2.py*
 #%{python2_sitearch}/drv_libxml2.py*
 #%{python2_sitearch}/libxml2mod.so
-
-#%files -n python3-%{name}
-#%doc python/TODO python/libxml2class.txt
-#%doc doc/*.py doc/python.html
-#%{python3_sitearch}/libxml2.py
+#
+%files -n python3-%{name}
+%doc python/TODO python/libxml2class.txt
+%doc doc/*.py doc/python.html
+%{python3_sitearch}/libxml2.*
 #%{python3_sitearch}/__pycache__/libxml2.*
-#%{python3_sitearch}/drv_libxml2.py
+%{python3_sitearch}/drv_libxml2.*
 #%{python3_sitearch}/__pycache__/drv_libxml2.*
-#%{python3_sitearch}/libxml2mod.so
+%{python3_sitearch}/libxml2mod.*
 
 %changelog
-* Fri Apr 10 2020 Daniel Hams <daniel.hams@gmail.com> - 2.9.9-4
-- Ensure no python pulled in
+* Mon Feb 10 2020 David King <amigadave@amigadave.com> - 2.9.10-3
+- Fix CVE-2019-20388 (#1799736)
+- Fix CVE-2020-7595 (#1799786)
+
+* Fri Jan 03 2020 Jan Pokorny <jpokorny@fedoraproject.org> - 2.9.10-2
+- Fix relaxed approach to nested documents on object disposal (#1780573)
+
+* Fri Nov 08 2019 David King <amigadave@amigadave.com> - 2.9.10-1
+- Update to 2.9.10 (#1767151)
 
 * Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2.9.9-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
