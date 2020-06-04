@@ -1,6 +1,6 @@
 Name:           ninja-build
 Version:        1.9.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Small build system with a focus on speed
 License:        ASL 2.0
 URL:            https://ninja-build.org/
@@ -22,6 +22,8 @@ BuildRequires:  re2c >= 0.11.3
 Requires:       emacs-filesystem
 Requires:       vim-filesystem
 
+BuildRequires:  libdicl-devel >= 0.1.25
+
 %description
 Ninja is a small build system with a focus on speed. It differs from other
 build systems in two major respects: it is designed to have its input files
@@ -31,9 +33,12 @@ fast as possible.
 %prep
 %autosetup -n ninja-%{version} -p1
 
+# Patch generation
+#exit 1
+
 %build
-export CFLAGS="-I%{_includedir}/libdicl-0.1 -DLIBDICL_NEED_GETOPT=1 $RPM_OPT_FLAGS"
-export LDFLAGS="-ldicl-0.1 $RPM_LD_FLAGS"
+export CFLAGS="-D_SGI_SOURCE -D_SGI_MP_SOURCE -D_SGI_REENTRANT_FUNCTIONS -I%{_includedir}/libdicl-0.1 -DLIBDICL_NEED_GETOPT=1 $RPM_OPT_FLAGS"
+export LDFLAGS="-ldicl-0.1 $RPM_LD_FLAGS -lpthread"
 
 %if 0%{?rhel} && 0%{?rhel} <= 7
 %{__python2} \
@@ -78,6 +83,9 @@ ln -s ninja %{buildroot}%{_bindir}/ninja-build
 %{rpmmacrodir}/macros.ninja
 
 %changelog
+* Sun May 24 2020 SGUG <sgug@sgidev.sh> - 1.9.0-4
+- Implement workaround for broken IRIX getcwd call (it sets errno)
+
 * Mon Apr 20 2020 SGUG <sgug@sgidev.sh> - 1.9.0-3
 - Import into wip
 
