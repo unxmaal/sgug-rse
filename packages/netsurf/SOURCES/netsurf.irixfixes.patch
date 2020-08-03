@@ -27,6 +27,30 @@ diff -Naur netsurf-all-3.9.orig/libnsfb/src/plot.h netsurf-all-3.9/libnsfb/src/p
      #if defined(__BYTE_ORDER__)
          #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
              #define NSFB_BE_BYTE_ORDER
+diff -Naur netsurf-all-3.9.orig/libnslog/Makefile netsurf-all-3.9/libnslog/Makefile
+--- netsurf-all-3.9.orig/libnslog/Makefile	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/libnslog/Makefile	2020-08-03 06:45:56.483679000 +0000
+@@ -32,7 +32,7 @@
+   # __inline__ is a GCCism
+   CFLAGS := $(CFLAGS) -Dinline="__inline__"
+ endif
+-CFLAGS := $(CFLAGS) -D_POSIX_C_SOURCE=200809L -g
++CFLAGS := $(CFLAGS) -D_SGI_SOURCE -D_SGI_REENTRANT_FUNCTIONS -g
+ 
+ REQUIRED_LIBS := nslog
+ 
+diff -Naur netsurf-all-3.9.orig/libnspsl/Makefile netsurf-all-3.9/libnspsl/Makefile
+--- netsurf-all-3.9.orig/libnspsl/Makefile	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/libnspsl/Makefile	2020-08-03 06:46:50.389921000 +0000
+@@ -32,7 +32,7 @@
+   # __inline__ is a GCCism
+   CFLAGS := $(CFLAGS) -Dinline="__inline__"
+ endif
+-CFLAGS := $(CFLAGS) -D_POSIX_C_SOURCE=200809L
++CFLAGS := $(CFLAGS) -D_SGI_SOURCE -D_SGI_REENTRANT_FUNCTIONS
+ 
+ REQUIRED_LIBS := nspsl
+ 
 diff -Naur netsurf-all-3.9.orig/libnsutils/Makefile netsurf-all-3.9/libnsutils/Makefile
 --- netsurf-all-3.9.orig/libnsutils/Makefile	2019-07-17 11:37:00.000000000 +0000
 +++ netsurf-all-3.9/libnsutils/Makefile	2020-07-30 09:43:49.034301200 +0000
@@ -173,8 +197,8 @@ diff -Naur netsurf-all-3.9.orig/netsurf/Makefile netsurf-all-3.9/netsurf/Makefil
 +#
 diff -Naur netsurf-all-3.9.orig/netsurf/Makefile.config netsurf-all-3.9/netsurf/Makefile.config
 --- netsurf-all-3.9.orig/netsurf/Makefile.config	1969-12-31 19:00:00.000000000 +0000
-+++ netsurf-all-3.9/netsurf/Makefile.config	2020-08-02 17:02:21.462587800 +0000
-@@ -0,0 +1,42 @@
++++ netsurf-all-3.9/netsurf/Makefile.config	2020-08-03 10:12:25.240834800 +0000
+@@ -0,0 +1,41 @@
 +#
 +# NetSurf build configuration example
 +#
@@ -216,7 +240,6 @@ diff -Naur netsurf-all-3.9.orig/netsurf/Makefile.config netsurf-all-3.9/netsurf/
 +
 +### If you're using the sanitizers and you want it to stop on failure...
 +# override NETSURF_RECOVER_SANITIZERS := NO
-+override NETSURF_GTK_RES_PATH := /usr/sgug/share/netsurf/:./frontends/gtk/res/
 diff -Naur netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h
 --- netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h	2019-07-17 11:37:00.000000000 +0000
 +++ netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h	2020-07-30 19:57:22.654754600 +0000
@@ -451,7 +474,7 @@ diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/viewdata.c netsurf-all-3.9
  			rd--;
 diff -Naur netsurf-all-3.9.orig/netsurf/utils/config.h netsurf-all-3.9/netsurf/utils/config.h
 --- netsurf-all-3.9.orig/netsurf/utils/config.h	2019-07-17 11:37:00.000000000 +0000
-+++ netsurf-all-3.9/netsurf/utils/config.h	2020-08-01 10:17:36.942241800 +0000
++++ netsurf-all-3.9/netsurf/utils/config.h	2020-08-03 07:40:29.753147800 +0000
 @@ -133,6 +133,10 @@
      #define WITH_MMAP
  #endif
@@ -504,13 +527,13 @@ diff -Naur netsurf-all-3.9.orig/netsurf/utils/log.c netsurf-all-3.9/netsurf/util
  	gettimeofday(&now_tv, NULL);
 diff -Naur netsurf-all-3.9.orig/nsgenbind/Makefile netsurf-all-3.9/nsgenbind/Makefile
 --- netsurf-all-3.9.orig/nsgenbind/Makefile	2019-07-17 11:37:01.000000000 +0000
-+++ netsurf-all-3.9/nsgenbind/Makefile	2020-07-30 19:58:28.558183000 +0000
++++ netsurf-all-3.9/nsgenbind/Makefile	2020-08-03 09:58:11.707748200 +0000
 @@ -32,7 +32,7 @@
    endif
  endif
  
 -CFLAGS := -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L \
-+CFLAGS := -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=199309L \
++CFLAGS := -D_BSD_SOURCE -D_DEFAULT_SOURCE  -D_SGI_SOURCE -D_SGI_REENTRANT_FUNCTIONS\
  	-I$(CURDIR)/include/ -I$(CURDIR)/src \
  	$(WARNFLAGS) $(CFLAGS)
  ifneq ($(GCCVER),2)
