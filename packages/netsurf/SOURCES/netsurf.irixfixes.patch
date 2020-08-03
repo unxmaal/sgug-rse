@@ -1,0 +1,516 @@
+diff -Naur netsurf-all-3.9.orig/Makefile netsurf-all-3.9/Makefile
+--- netsurf-all-3.9.orig/Makefile	2019-07-17 11:36:40.000000000 +0000
++++ netsurf-all-3.9/Makefile	2020-07-30 20:07:55.369229000 +0000
+@@ -25,7 +25,7 @@
+ NETSURF_TARG := netsurf
+ 
+ # nsgenbind host tool
+-NSGENBIND_TARG := nsgenbind
++#NSGENBIND_TARG := nsgenbind
+ 
+ # Library targets
+ NSLIB_ALL_TARG := buildsystem libnslog libwapcaplet libparserutils libcss libhubbub libdom libnsbmp libnsgif librosprite libnsutils libutf8proc libnspsl
+diff -Naur netsurf-all-3.9.orig/libnsfb/src/plot.h netsurf-all-3.9/libnsfb/src/plot.h
+--- netsurf-all-3.9.orig/libnsfb/src/plot.h	2019-07-17 11:36:59.000000000 +0000
++++ netsurf-all-3.9/libnsfb/src/plot.h	2020-07-30 10:31:12.410070000 +0000
+@@ -46,7 +46,12 @@
+         #error "Endian determination failed"
+     #endif
+ #else
+-    #include <endian.h>
++    #if defined(__sgi)
++        #include <standards.h>
++        #include <sys/endian.h>
++    #else
++        #include <endian.h>
++    #endif
+     #if defined(__BYTE_ORDER__)
+         #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+             #define NSFB_BE_BYTE_ORDER
+diff -Naur netsurf-all-3.9.orig/libnsutils/Makefile netsurf-all-3.9/libnsutils/Makefile
+--- netsurf-all-3.9.orig/libnsutils/Makefile	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/libnsutils/Makefile	2020-07-30 09:43:49.034301200 +0000
+@@ -31,7 +31,7 @@
+   # __inline__ is a GCCism
+   CFLAGS := $(CFLAGS) -Dinline="__inline__"
+ endif
+-CFLAGS := $(CFLAGS) -D_POSIX_C_SOURCE=200809L
++CFLAGS := $(CFLAGS) -D_SGI_SOURCE -D_SGI_REENTRANT_FUNCTIONS
+ 
+ REQUIRED_LIBS := nsutils
+ 
+diff -Naur netsurf-all-3.9.orig/libnsutils/src/time.c netsurf-all-3.9/libnsutils/src/time.c
+--- netsurf-all-3.9.orig/libnsutils/src/time.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/libnsutils/src/time.c	2020-07-30 09:44:59.316457200 +0000
+@@ -16,7 +16,9 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
+-#if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && (defined _POSIX_MONOTONIC_CLOCK)) || defined(__OpenBSD__)
++/* #if (defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && (defined _POSIX_MONOTONIC_CLOCK)) || defined(__OpenBSD__)
++#include <time.h>
++#elif defined(__sgi)
+ #include <time.h>
+ #elif defined(__riscos)
+ #include <oslib/os.h>
+@@ -32,7 +34,9 @@
+ #include <proto/timer.h>
+ #else
+ #include <sys/time.h>
+-#endif
++#endif */
++#include <time.h>
++#include <sys/time.h>
+ #include "nsutils/time.h"
+ 
+ /* exported interface documented in nsutils/time.h */
+diff -Naur netsurf-all-3.9.orig/libparserutils/Makefile.config netsurf-all-3.9/libparserutils/Makefile.config
+--- netsurf-all-3.9.orig/libparserutils/Makefile.config	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/libparserutils/Makefile.config	2020-08-01 16:16:55.328301400 +0000
+@@ -1,7 +1,7 @@
+ # Configuration Makefile fragment
+ 
+ # Disable use of iconv in the input filter
+-# CFLAGS := $(CFLAGS) -DWITHOUT_ICONV_FILTER
++CFLAGS := $(CFLAGS) -DWITHOUT_ICONV_FILTER
+ 
+ # Cater for local configuration changes
+ -include Makefile.config.override
+diff -Naur netsurf-all-3.9.orig/netsurf/Makefile netsurf-all-3.9/netsurf/Makefile
+--- netsurf-all-3.9.orig/netsurf/Makefile	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/Makefile	2020-07-31 20:46:04.617517200 +0000
+@@ -138,7 +138,7 @@
+ TOUCH=touch
+ STRIP?=strip
+ INSTALL?=install
+-SPLIT_MESSAGES=$(PERL) utils/split-messages.pl
++#SPLIT_MESSAGES=$(PERL) utils/split-messages.pl
+ 
+ # build verbosity
+ ifeq ($(V),1)
+@@ -668,27 +668,27 @@
+ 
+ # Message splitting rule generation macro
+ # 1 = Language
+-define split_messages
+-
+-$$(MESSAGES_TARGET)/$(1)/Messages: resources/FatMessages
+-	$$(VQ)echo "MSGSPLIT: Language: $(1) Filter: $$(MESSAGES_FILTER)"
+-	$$(Q)$$(MKDIR) -p $$(MESSAGES_TARGET)/$(1)
+-	$$(Q)$$(RM) $$@
+-	$$(Q)$$(SPLIT_MESSAGES) -l $(1) -p $$(MESSAGES_FILTER) -f messages -o $$@ -z $$<
+-
+-CLEAN_MESSAGES += $$(MESSAGES_TARGET)/$(1)/Messages
+-MESSAGES += $$(MESSAGES_TARGET)/$(1)/Messages
+-
+-endef
+-
+-# generate the message file rules
+-$(eval $(foreach LANG,$(MESSAGES_LANGUAGES), \
+-	$(call split_messages,$(LANG))))
+-
+-clean-messages:
+-	$(VQ)echo "   CLEAN: $(CLEAN_MESSAGES)"
+-	$(Q)$(RM) $(CLEAN_MESSAGES)
+-CLEANS += clean-messages
++#define split_messages
++#
++#$$(MESSAGES_TARGET)/$(1)/Messages: resources/FatMessages
++#	$$(VQ)echo "MSGSPLIT: Language: $(1) Filter: $$(MESSAGES_FILTER)"
++#	$$(Q)$$(MKDIR) -p $$(MESSAGES_TARGET)/$(1)
++#	$$(Q)$$(RM) $$@
++#	$$(Q)$$(SPLIT_MESSAGES) -l $(1) -p $$(MESSAGES_FILTER) -f messages -o $$@ -z $$<
++#
++#CLEAN_MESSAGES += $$(MESSAGES_TARGET)/$(1)/Messages
++#MESSAGES += $$(MESSAGES_TARGET)/$(1)/Messages
++#
++#endef
++#
++## generate the message file rules
++#$(eval $(foreach LANG,$(MESSAGES_LANGUAGES), \
++#	$(call split_messages,$(LANG))))
++#
++#clean-messages:
++#	$(VQ)echo "   CLEAN: $(CLEAN_MESSAGES)"
++#	$(Q)$(RM) $(CLEAN_MESSAGES)
++#CLEANS += clean-messages
+ 
+ 
+ # ----------------------------------------------------------------------------
+@@ -914,18 +914,18 @@
+ # ----------------------------------------------------------------------------
+ # Transifex message processing
+ # ----------------------------------------------------------------------------
+-
+-.PHONY: messages-split-tfx messages-fetch-tfx messages-import-tfx
+-
+-# split fat messages into properties files suitable for uploading to transifex
+-messages-split-tfx:
+-	for splitlang in $(FAT_LANGUAGES);do perl ./utils/split-messages.pl -l $${splitlang} -f transifex -p any -o Messages.any.$${splitlang}.tfx resources/FatMessages;done
+-
+-# download property files from transifex
+-messages-fetch-tfx:
+-	for splitlang in $(FAT_LANGUAGES);do $(RM) Messages.any.$${splitlang}.tfx ; perl ./utils/fetch-transifex.pl -w insecure -l $${splitlang} -o Messages.any.$${splitlang}.tfx ;done
+-
+-# merge property files into fat messages
+-messages-import-tfx: messages-fetch-tfx
+-	for tfxlang in $(FAT_LANGUAGES);do perl ./utils/import-messages.pl -l $${tfxlang} -p any -f transifex -o resources/FatMessages -i resources/FatMessages -I Messages.any.$${tfxlang}.tfx ; $(RM) Messages.any.$${tfxlang}.tfx; done
+-
++#
++#.PHONY: messages-split-tfx messages-fetch-tfx messages-import-tfx
++#
++## split fat messages into properties files suitable for uploading to transifex
++#messages-split-tfx:
++#	for splitlang in $(FAT_LANGUAGES);do perl ./utils/split-messages.pl -l $${splitlang} -f transifex -p any -o Messages.any.$${splitlang}.tfx resources/FatMessages;done
++#
++## download property files from transifex
++#messages-fetch-tfx:
++#	for splitlang in $(FAT_LANGUAGES);do $(RM) Messages.any.$${splitlang}.tfx ; perl ./utils/fetch-transifex.pl -w insecure -l $${splitlang} -o Messages.any.$${splitlang}.tfx ;done
++#
++## merge property files into fat messages
++#messages-import-tfx: messages-fetch-tfx
++#	for tfxlang in $(FAT_LANGUAGES);do perl ./utils/import-messages.pl -l $${tfxlang} -p any -f transifex -o resources/FatMessages -i resources/FatMessages -I Messages.any.$${tfxlang}.tfx ; $(RM) Messages.any.$${tfxlang}.tfx; done
++#
+diff -Naur netsurf-all-3.9.orig/netsurf/Makefile.config netsurf-all-3.9/netsurf/Makefile.config
+--- netsurf-all-3.9.orig/netsurf/Makefile.config	1969-12-31 19:00:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/Makefile.config	2020-08-02 17:02:21.462587800 +0000
+@@ -0,0 +1,42 @@
++#
++# NetSurf build configuration example
++#
++#
++# To configure NetSurf's build options create a Makefile.config file. This is
++# an example Makefile.config.
++#
++# To see the available config options, look at Makefile.defaults, but make any
++# alterations in your Makefile.config
++
++### To enable/disable PNG support, uncomment the appropriate line below.
++# override NETSURF_USE_PNG := YES
++# override NETSURF_USE_PNG := NO
++
++### To enable/disable SVGTiny support, uncomment the appropriate line below.
++# override NETSURF_USE_NSSVG := YES
++# override NETSURF_USE_NSSVG := NO
++
++### To enable/disable RSVG support, uncomment the appropriate line below.
++# override NETSURF_USE_RSVG := YES
++# override NETSURF_USE_RSVG := NO
++
++### To enable/disable BMP support, uncomment the appropriate line below.
++# override NETSURF_USE_BMP := YES
++# override NETSURF_USE_BMP := NO
++
++### To make the framebuffer front end use freetype for text, uncomment the
++### following line
++# override NETSURF_FB_FONTLIB := freetype
++
++### To disable JavaScript support, uncomment the appropriate line below.
++override NETSURF_USE_DUKTAPE := NO
++
++### To change flags to javascript binding generator
++# GBFLAGS:=-g
++
++### To enable ASAN and UBSAN support in builds regardless of target
++# override NETSURF_USE_SANITIZER := YES
++
++### If you're using the sanitizers and you want it to stop on failure...
++# override NETSURF_RECOVER_SANITIZERS := NO
++override NETSURF_GTK_RES_PATH := /usr/sgug/share/netsurf/:./frontends/gtk/res/
+diff -Naur netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h
+--- netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h	2020-07-30 19:57:22.654754600 +0000
+@@ -638,6 +638,9 @@
+ /* --- Emscripten --- */
+ #if defined(DUK_COMPILING_DUKTAPE)
+ #if !defined(_POSIX_C_SOURCE)
++#if defined(__sgi)
++#define _POSIX_C_SOURCE 199309L
++#else
+ #define _POSIX_C_SOURCE  200809L
+ #endif
+ #if !defined(_GNU_SOURCE)
+diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/Makefile netsurf-all-3.9/netsurf/frontends/gtk/Makefile
+--- netsurf-all-3.9.orig/netsurf/frontends/gtk/Makefile	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/frontends/gtk/Makefile	2020-08-02 09:44:01.345956000 +0000
+@@ -38,7 +38,7 @@
+ 		-D_BSD_SOURCE \
+ 		-D_DEFAULT_SOURCE \
+ 		-D_XOPEN_SOURCE=700 \
+-		-D_POSIX_C_SOURCE=200809L \
++		-D_POSIX_C_SOURCE=199309L \
+ 		-D_NETBSD_SOURCE \
+ 		-DGTK_RESPATH=\"$(NETSURF_GTK_RES_PATH)\"
+ 
+@@ -97,68 +97,68 @@
+ #  than "knowing" the version but there does not appear to be a simple
+ #  way to implement that.
+ #
+-NETSURF_FEATURE_GRESOURCE_AVAILABLE := $(shell $(PKG_CONFIG) --atleast-version=2.32 gmodule-2.0 && echo yes)
+-ifneq (,$(filter $(NETSURF_USE_GRESOURCE),AUTO YES))
+-ifeq ($(NETSURF_FEATURE_GRESOURCE_AVAILABLE),yes)
+-
+-# Gresource use has been enabled
+-NETSURF_FEATURE_GRESOURCE_ENABLED := yes
+-
+-#resource compiler tool
+-GLIB_COMPILE_RESOURCES := glib-compile-resources
+-CFLAGS += -DWITH_GRESOURCE
+-
+-NETSURF_GRESOURCE_XML := $(NSGTK_RESOURCES_DIR)/netsurf.gresource.xml
+-MESSAGES_GRESOURCE_XML := $(NSGTK_RESOURCES_DIR)/messages.gresource.xml
+-
+-# generate the netsurf gresource source files
+-$(OBJROOT)/netsurf_gresource.c: $(NETSURF_GRESOURCE_XML) $(shell $(GLIB_COMPILE_RESOURCES) --sourcedir $(NSGTK_RESOURCES_DIR) --generate-dependencies $(NETSURF_GRESOURCE_XML))
+-	$(VQ)echo "GRESORCE: $<"
+-	$(Q)$(GLIB_COMPILE_RESOURCES) --generate-source --sourcedir $(NSGTK_RESOURCES_DIR) --target=$@ $<
+-
+-S_RESOURCE += $(OBJROOT)/netsurf_gresource.c
+-
+-# generate the messages gresource source file
+-$(OBJROOT)/messages_gresource.c: $(MESSAGES_GRESOURCE_XML) $(addsuffix /Messages,$(addprefix $(MESSAGES_TARGET)/,$(MESSAGES_LANGUAGES)))
+-	$(VQ)echo "GRESORCE: $<"
+-	$(Q)$(GLIB_COMPILE_RESOURCES) --generate-source --sourcedir $(NSGTK_RESOURCES_DIR) --target=$@ $<
+-
+-S_RESOURCE += $(OBJROOT)/messages_gresource.c
+-
+-
+-endif
+-endif
+-
+-# Build pixbufs as inlines if enabled
+-ifneq (,$(filter $(NETSURF_USE_INLINE_PIXBUF),AUTO YES))
+-ifneq ($(NETSURF_FEATURE_GRESOURCE_ENABLED),yes)
+-
+-CFLAGS += -DWITH_BUILTIN_PIXBUF
+-
+-GTK_IMAGE_favicon := favicon.png
+-GTK_IMAGE_netsurf := netsurf.xpm
+-GTK_IMAGE_menu_cursor := menu_cursor.png
+-
+-# 1: input file
+-# 2: output file
+-# 3: bitmap name
+-define convert_image
+-
+-# add converted pixbuf to builtin resource sources
+-S_RESOURCE += $(2)
+-
+-$(2): $(1)
+-	$(VQ)echo "  INLINE: ${3}"
+-	$(Q)echo "#include <gdk-pixbuf/gdk-pixdata.h>" > $(2)
+-	$(Q)gdk-pixbuf-csource --extern --raw --name=$(3) $(1) >> $(2) || \
+-	( rm -f $(2) && false )
+-
+-endef
+-
+-$(eval $(foreach V,$(filter GTK_IMAGE_%,$(.VARIABLES)),$(call convert_image,$(addprefix $(NSGTK_RESOURCES_DIR)/,$($(V))),$(OBJROOT)/$(patsubst GTK_IMAGE_%,%,$(V)).c,$(patsubst GTK_IMAGE_%,%,$(V))_pixdata)))
+-endif
+-endif
++#NETSURF_FEATURE_GRESOURCE_AVAILABLE := $(shell $(PKG_CONFIG) --atleast-version=2.32 gmodule-2.0 && echo yes)
++#ifneq (,$(filter $(NETSURF_USE_GRESOURCE),AUTO YES))
++#ifeq ($(NETSURF_FEATURE_GRESOURCE_AVAILABLE),yes)
++#
++## Gresource use has been enabled
++#NETSURF_FEATURE_GRESOURCE_ENABLED := yes
++#
++##resource compiler tool
++#GLIB_COMPILE_RESOURCES := glib-compile-resources
++#CFLAGS += -DWITH_GRESOURCE
++#
++#NETSURF_GRESOURCE_XML := $(NSGTK_RESOURCES_DIR)/netsurf.gresource.xml
++#MESSAGES_GRESOURCE_XML := $(NSGTK_RESOURCES_DIR)/messages.gresource.xml
++#
++## generate the netsurf gresource source files
++#$(OBJROOT)/netsurf_gresource.c: $(NETSURF_GRESOURCE_XML) $(shell $(GLIB_COMPILE_RESOURCES) --sourcedir $(NSGTK_RESOURCES_DIR) --generate-dependencies $(NETSURF_GRESOURCE_XML))
++#	$(VQ)echo "GRESORCE: $<"
++#	$(Q)$(GLIB_COMPILE_RESOURCES) --generate-source --sourcedir $(NSGTK_RESOURCES_DIR) --target=$@ $<
++#
++#S_RESOURCE += $(OBJROOT)/netsurf_gresource.c
++#
++## generate the messages gresource source file
++#$(OBJROOT)/messages_gresource.c: $(MESSAGES_GRESOURCE_XML) $(addsuffix /Messages,$(addprefix $(MESSAGES_TARGET)/,$(MESSAGES_LANGUAGES)))
++#	$(VQ)echo "GRESORCE: $<"
++#	$(Q)$(GLIB_COMPILE_RESOURCES) --generate-source --sourcedir $(NSGTK_RESOURCES_DIR) --target=$@ $<
++#
++#S_RESOURCE += $(OBJROOT)/messages_gresource.c
++#
++#
++#endif
++#endif
+ 
++## Build pixbufs as inlines if enabled
++#ifneq (,$(filter $(NETSURF_USE_INLINE_PIXBUF),AUTO YES))
++#ifneq ($(NETSURF_FEATURE_GRESOURCE_ENABLED),yes)
++#
++#CFLAGS += -DWITH_BUILTIN_PIXBUF
++#
++#GTK_IMAGE_favicon := favicon.png
++#GTK_IMAGE_netsurf := netsurf.xpm
++#GTK_IMAGE_menu_cursor := menu_cursor.png
++#
++## 1: input file
++## 2: output file
++## 3: bitmap name
++#define convert_image
++#
++## add converted pixbuf to builtin resource sources
++#S_RESOURCE += $(2)
++#
++#$(2): $(1)
++#	$(VQ)echo "  INLINE: ${3}"
++#	$(Q)echo "#include <gdk-pixbuf/gdk-pixdata.h>" > $(2)
++#	$(Q)gdk-pixbuf-csource --extern --raw --name=$(3) $(1) >> $(2) || \
++#	( rm -f $(2) && false )
++#
++#endef
++#
++#$(eval $(foreach V,$(filter GTK_IMAGE_%,$(.VARIABLES)),$(call convert_image,$(addprefix $(NSGTK_RESOURCES_DIR)/,$($(V))),$(OBJROOT)/$(patsubst GTK_IMAGE_%,%,$(V)).c,$(patsubst GTK_IMAGE_%,%,$(V))_pixdata)))
++#endif
++#endif
++#
+ # ----------------------------------------------------------------------------
+ # Source file setup
+ # ----------------------------------------------------------------------------
+@@ -204,8 +204,8 @@
+ 	$(Q)install -m 0644 $(NSGTK_RESOURCES_DIR)/icons/*.png $(NSGTK_RESOURCES_DESTDIR)/icons
+ 	$(Q)$(MKDIR) -p $(NSGTK_RESOURCES_DESTDIR)/throbber
+ 	$(Q)install -m 0644 $(NSGTK_RESOURCES_DIR)/throbber/*.png $(NSGTK_RESOURCES_DESTDIR)/throbber
+-	$(Q)tar -c -h -C $(NSGTK_RESOURCES_DIR) -f - $(GTK_TRANSLATIONS_HTML) | tar -xv -C $(NSGTK_RESOURCES_DESTDIR) -f -
+-	$(Q)install -m 0644 $(GTK_RESOURCES_LIST) $(NSGTK_RESOURCES_DESTDIR)
++	#$(Q)tar -c -h -C $(NSGTK_RESOURCES_DIR) -f - $(GTK_TRANSLATIONS_HTML) | tar -xv -C $(NSGTK_RESOURCES_DESTDIR) -f -
++	#$(Q)install -m 0644 $(GTK_RESOURCES_LIST) $(NSGTK_RESOURCES_DESTDIR)
+ 
+ # ----------------------------------------------------------------------------
+ # Package target
+diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/fetch.c netsurf-all-3.9/netsurf/frontends/gtk/fetch.c
+--- netsurf-all-3.9.orig/netsurf/frontends/gtk/fetch.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/frontends/gtk/fetch.c	2020-08-01 14:14:18.068736200 +0000
+@@ -253,6 +253,7 @@
+ 
+ static nsurl *nsgtk_get_resource_url(const char *path)
+ {
++#define    PATH_MAX 1024
+ 	char buf[PATH_MAX];
+ 	nsurl *url = NULL;
+ 
+diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/gui.c netsurf-all-3.9/netsurf/frontends/gtk/gui.c
+--- netsurf-all-3.9.orig/netsurf/frontends/gtk/gui.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/frontends/gtk/gui.c	2020-08-01 14:13:26.411113000 +0000
+@@ -236,6 +236,7 @@
+  */
+ static nserror nsgtk_init(int argc, char** argv, char **respath)
+ {
++#define    PATH_MAX 1024
+ 	char buf[PATH_MAX];
+ 	char *resource_filename;
+ 	char *addr = NULL;
+diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/scaffolding.c netsurf-all-3.9/netsurf/frontends/gtk/scaffolding.c
+--- netsurf-all-3.9.orig/netsurf/frontends/gtk/scaffolding.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/frontends/gtk/scaffolding.c	2020-08-01 14:13:57.893613800 +0000
+@@ -829,6 +829,7 @@
+ 
+ MULTIHANDLER(pdf)
+ {
++#define    PATH_MAX 1024
+ #ifdef WITH_PDF_EXPORT
+ 
+ 	GtkWidget *save_dialog;
+diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/viewdata.c netsurf-all-3.9/netsurf/frontends/gtk/viewdata.c
+--- netsurf-all-3.9.orig/netsurf/frontends/gtk/viewdata.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/frontends/gtk/viewdata.c	2020-08-01 18:47:28.657794400 +0000
+@@ -28,7 +28,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <strings.h>
+-#define _WITH_GETLINE /* necessary for FreeBSD */
++/*#define _WITH_GETLINE  necessary for FreeBSD */
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <gtk/gtk.h>
+@@ -660,7 +660,9 @@
+ 	}
+ 
+ 	mimetype_len = strlen(mimetype);
+-	while ((rd = getline(&line, &len, fp)) != -1) {
++	/*while ((rd = getline(&line, &len, fp)) != -1) { */
++	while ((rd = fgets(line, sizeof(line), fp)) != -1) { 
++
+ 		/* line includes line endings if present, remove them */
+ 		while ((line[rd - 1] == '\n') || (line[rd - 1] == '\r')) {
+ 			rd--;
+@@ -725,7 +727,8 @@
+ 		return NULL;
+ 	}
+ 
+-	while ((rd = getline(&line, &len, fp)) != -1) {
++	/* while ((rd = getline(&line, &len, fp)) != -1) { */
++    while ((rd = fgets(line, sizeof(line), fp)) != -1) {
+ 		/* line includes line endings if present, remove them */
+ 		while ((line[rd - 1] == '\n') || (line[rd - 1] == '\r')) {
+ 			rd--;
+diff -Naur netsurf-all-3.9.orig/netsurf/utils/config.h netsurf-all-3.9/netsurf/utils/config.h
+--- netsurf-all-3.9.orig/netsurf/utils/config.h	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/utils/config.h	2020-08-01 10:17:36.942241800 +0000
+@@ -133,6 +133,10 @@
+     #define WITH_MMAP
+ #endif
+ 
++#if defined(__sgi)
++    #define NO_IPV6
++#endif
++
+ /* amiga */
+ #if defined(__amigaos4__) || defined(__AMIGA__) || \
+ 		defined(nsatari)
+diff -Naur netsurf-all-3.9.orig/netsurf/utils/filepath.c netsurf-all-3.9/netsurf/utils/filepath.c
+--- netsurf-all-3.9.orig/netsurf/utils/filepath.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/utils/filepath.c	2020-08-01 14:24:53.949924200 +0000
+@@ -44,6 +44,7 @@
+ /* exported interface documented in filepath.h */
+ char *filepath_vsfindfile(char *str, const char *format, va_list ap)
+ {
++#define PATH_MAX 1024
+ 	char *realpathname;
+ 	char *pathname;
+ 	int len;
+diff -Naur netsurf-all-3.9.orig/netsurf/utils/log.c netsurf-all-3.9/netsurf/utils/log.c
+--- netsurf-all-3.9.orig/netsurf/utils/log.c	2019-07-17 11:37:00.000000000 +0000
++++ netsurf-all-3.9/netsurf/utils/log.c	2020-08-02 08:59:48.818788800 +0000
+@@ -18,6 +18,7 @@
+ 
+ #include <stdarg.h>
+ #include <stdio.h>
++#include <sys/time.h>
+ 
+ #include "utils/config.h"
+ #include "utils/nsoption.h"
+@@ -71,13 +72,15 @@
+  */
+ static const char *nslog_gettime(void)
+ {
++#include <sys/time.h>
+ 	static struct timeval start_tv;
+ 	static char buff[32];
+ 
+ 	struct timeval tv;
+ 	struct timeval now_tv;
+ 
+-	if (!timerisset(&start_tv)) {
++	/* if (!timerisset(&start_tv)) { */
++	if (start_tv.tv_sec != 0) {
+ 		gettimeofday(&start_tv, NULL);
+ 	}
+ 	gettimeofday(&now_tv, NULL);
+diff -Naur netsurf-all-3.9.orig/nsgenbind/Makefile netsurf-all-3.9/nsgenbind/Makefile
+--- netsurf-all-3.9.orig/nsgenbind/Makefile	2019-07-17 11:37:01.000000000 +0000
++++ netsurf-all-3.9/nsgenbind/Makefile	2020-07-30 19:58:28.558183000 +0000
+@@ -32,7 +32,7 @@
+   endif
+ endif
+ 
+-CFLAGS := -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L \
++CFLAGS := -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=199309L \
+ 	-I$(CURDIR)/include/ -I$(CURDIR)/src \
+ 	$(WARNFLAGS) $(CFLAGS)
+ ifneq ($(GCCVER),2)
