@@ -242,30 +242,32 @@ diff -Naur netsurf-all-3.9.orig/netsurf/Makefile.config netsurf-all-3.9/netsurf/
 +# override NETSURF_RECOVER_SANITIZERS := NO
 diff -Naur netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h
 --- netsurf-all-3.9.orig/netsurf/content/handlers/javascript/duktape/duk_config.h	2019-07-17 11:37:00.000000000 +0000
-+++ netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h	2020-07-30 19:57:22.654754600 +0000
-@@ -638,6 +638,9 @@
++++ netsurf-all-3.9/netsurf/content/handlers/javascript/duktape/duk_config.h	2020-08-03 10:24:06.219932600 +0000
+@@ -638,6 +638,10 @@
  /* --- Emscripten --- */
  #if defined(DUK_COMPILING_DUKTAPE)
  #if !defined(_POSIX_C_SOURCE)
 +#if defined(__sgi)
-+#define _POSIX_C_SOURCE 199309L
++#define _SGI_SOURCE 
++#define _SGI_REENTRANT_FUNCTIONS
 +#else
  #define _POSIX_C_SOURCE  200809L
  #endif
  #if !defined(_GNU_SOURCE)
 diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/Makefile netsurf-all-3.9/netsurf/frontends/gtk/Makefile
 --- netsurf-all-3.9.orig/netsurf/frontends/gtk/Makefile	2019-07-17 11:37:00.000000000 +0000
-+++ netsurf-all-3.9/netsurf/frontends/gtk/Makefile	2020-08-02 09:44:01.345956000 +0000
-@@ -38,7 +38,7 @@
++++ netsurf-all-3.9/netsurf/frontends/gtk/Makefile	2020-08-03 10:26:27.054120800 +0000
+@@ -38,7 +38,8 @@
  		-D_BSD_SOURCE \
  		-D_DEFAULT_SOURCE \
  		-D_XOPEN_SOURCE=700 \
 -		-D_POSIX_C_SOURCE=200809L \
-+		-D_POSIX_C_SOURCE=199309L \
++        -D_SGI_SOURCE \
++        -D_SGI_REENTRANT_FUNCTIONS \
  		-D_NETBSD_SOURCE \
  		-DGTK_RESPATH=\"$(NETSURF_GTK_RES_PATH)\"
  
-@@ -97,68 +97,68 @@
+@@ -97,68 +98,68 @@
  #  than "knowing" the version but there does not appear to be a simple
  #  way to implement that.
  #
@@ -395,7 +397,7 @@ diff -Naur netsurf-all-3.9.orig/netsurf/frontends/gtk/Makefile netsurf-all-3.9/n
  # ----------------------------------------------------------------------------
  # Source file setup
  # ----------------------------------------------------------------------------
-@@ -204,8 +204,8 @@
+@@ -204,8 +205,8 @@
  	$(Q)install -m 0644 $(NSGTK_RESOURCES_DIR)/icons/*.png $(NSGTK_RESOURCES_DESTDIR)/icons
  	$(Q)$(MKDIR) -p $(NSGTK_RESOURCES_DESTDIR)/throbber
  	$(Q)install -m 0644 $(NSGTK_RESOURCES_DIR)/throbber/*.png $(NSGTK_RESOURCES_DESTDIR)/throbber
